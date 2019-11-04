@@ -6066,3 +6066,9 @@ CONFIG_SBITMAP=y
 # CONFIG_WCD9XXX_CODEC_CORE is not set
 # CONFIG_WCD_DSP_GLINK is not set
 # CONFIG_WSA_MACRO is not set
+
+#
+# RmNet extensions
+#
+CONFIG_RMNET_PERF=y
+CONFIG_RMNET_SHS=y
