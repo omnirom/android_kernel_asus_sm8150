@@ -32,7 +32,7 @@ TFA_INC := $(AUDIO_ROOT)/asoc/codecs/tfa9874/inc
 # EXTRA_CFLAGS += -DTFA98XX_GIT_VERSIONS=\"$(GIT_VERSION)\"
 
 # debugging support (also enables trace_printk)
-EXTRA_CFLAGS += -DDEBUG -DTFA9874_NONDSP_STEREO
+EXTRA_CFLAGS += -DTFA9874_NONDSP_STEREO
 
 EXTRA_CFLAGS += -I$(TFA_INC)
 # EXTRA_CFLAGS += -Werror
