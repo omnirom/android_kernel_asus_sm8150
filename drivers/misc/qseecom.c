@@ -117,6 +117,7 @@
 #define ENABLE_KEY_WRAP_IN_KS    (1 << FDE_FLAG_POS)
 
 int g_test = 0;
+extern int g_QPST_property;
 
 enum qseecom_clk_definitions {
 	CLK_DFAB = 0,
@@ -3659,6 +3660,16 @@ static int __qseecom_send_cmd(struct qseecom_dev_handle *data,
 	if (ret) {
 		pr_err("scm_call() failed with err: %d (app_id = %d)\n",
 					ret, data->client.app_id);
+
+		 pr_err("scm_call() failed with err: %d (app_id = %d) (app_name = %s)\n",
+		 			ret, data->client.app_id ,(char *)data->client.app_name);
+
+		 if ((ret == -16) || (ret == -12)){
+		 	if( g_QPST_property == 1){
+		 		BUG_ON(1);
+		 	}
+		 }
+
 		goto exit;
 	}
 	if (data->client.dmabuf) {
