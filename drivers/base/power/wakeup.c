@@ -1046,7 +1046,7 @@ void pm_system_irq_wakeup(unsigned int irq_number)
 				name = desc->action->name;
 
 			display_early_on = false;
-			if (!strcmp(name, "gf") || !strcmp(name, "fts_ts")
+			if (!strcmp(name, "gf")
 					|| !strcmp(name, "pon_kpdpwr_status"))
 				display_early_on = true;
 			//pr_warn("%s: %d triggered %s\n", __func__,

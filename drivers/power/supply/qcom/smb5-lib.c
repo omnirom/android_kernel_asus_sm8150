@@ -5825,6 +5825,22 @@ void asus_chg_flow_work(struct work_struct *work)
 	}
 
 	apsd_result = smblib_update_usb_type(smbchg_dev);
+	
+	// fix slow plugin issue
+	if (apsd_result->bit == SDP_CHARGER_BIT ||
+		apsd_result->bit == FLOAT_CHARGER_BIT ||
+		apsd_result->bit == CDP_CHARGER_BIT ||
+		apsd_result->bit == 0) {
+		CHG_DBG("Rerun APSD\n");
+		rc = smblib_masked_write(smbchg_dev, CMD_APSD_REG, APSD_RERUN_BIT, APSD_RERUN_BIT);
+		if (rc < 0)
+			CHG_DBG_E("Failed to set CMD_APSD_REG\n");
+		
+		msleep(1000);
+		
+		apsd_result = smblib_update_usb_type(smbchg_dev);
+	}
+	
 	if (apsd_result->bit == (DCP_CHARGER_BIT | QC_3P0_BIT))
 		HVDCP_FLAG = 3;
 	else if (apsd_result->bit == (DCP_CHARGER_BIT | QC_2P0_BIT))
@@ -5864,7 +5880,7 @@ void asus_chg_flow_work(struct work_struct *work)
 			HVDCP_FLAG = 0;
 		CHG_DBG("Retry %s detected\n", apsd_result->name);
 	}
-
+			
 	if (smbchg_dev->pd_active) {
 		CHG_DBG("PD_active\n");
 		asus_adapter_detecting_flag = 0;
