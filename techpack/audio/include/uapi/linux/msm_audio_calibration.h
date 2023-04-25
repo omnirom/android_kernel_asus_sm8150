@@ -44,6 +44,54 @@
 							217, void *)
 #define AUDIO_SET_RTAC_AFE_CAL		_IOWR(CAL_IOCTL_MAGIC, \
 							218, void *)
+/* ASUS_BSP +++ Add warning uevent for input occupied issue ( TT1290090 ) */
+#define AUDIO_SET_ACTIVEINPUT_PID		_IOWR(CAL_IOCTL_MAGIC, \
+							232, void *)
+/* ASUS_BSP --- */
+
+//Jessy +++ AudioWizard hifi & ringtone mode
+#define AUDIO_SET_AUDIOWIZARD_FORCE_PRESET	_IOWR(CAL_IOCTL_MAGIC, \
+							221, void *)
+#define SW_AUDIOWIZARD_RINGTONG 	0x0b
+#define SW_AUDIOWIZARD_HIFI 		0x0d
+//Jessy ---
+
+//Jessy +++ send mic intent
+#define AUDIO_SET_AUDIORECORD_MIC_USING	_IOWR(CAL_IOCTL_MAGIC, \
+							223, void *)
+
+#define SW_AUDIORECORD_START 0x0c
+#define SW_AUDIORECORD_STOP 0x0e
+//Jessy ---
+
+//Jessy +++ AudioWizard muti-channel mode
+#define AUDIO_SET_AUDIOWIZARD_FORCE_CHANNEL	_IOWR(CAL_IOCTL_MAGIC, \
+							222, void *)
+#define SW_AUDIOWIZARD_CHANNELS_1 	0x03
+#define SW_AUDIOWIZARD_CHANNELS_2 		0x05
+#define SW_AUDIOWIZARD_CHANNELS_M 		0x08
+//Jessy ---
+
+/* ASUS_BSP +++ Audio mode and device */
+#define AUDIO_SET_MODE			_IOWR(CAL_IOCTL_MAGIC, \
+							225, void *)
+#define AUDIO_SET_RCV_DEVICE		_IOWR(CAL_IOCTL_MAGIC, \
+							233, void *)
+
+/* ASUS_BSP +++ Add uevent for earpiece checking */
+#define AUDIO_SET_ACTIVEOUTPUT_PID	_IOWR(CAL_IOCTL_MAGIC, \
+							234, void *)
+/* ASUS_BSP --- */
+
+#define AUDIO_DRV_MODE_IN_CALL		2
+#define AUDIO_DRV_MODE_IN_COMMUNICATION	3
+
+#define AUDIO_DRV_DEVICE_RECEIVER	1
+
+extern int get_audiomode(void);
+extern int get_audio_rcv_device(void);
+/* ASUS_BSP --- Audio mode and device */
+
 enum {
 	CVP_VOC_RX_TOPOLOGY_CAL_TYPE = 0,
 	CVP_VOC_TX_TOPOLOGY_CAL_TYPE,
@@ -95,6 +143,14 @@ enum {
 	CORE_CUSTOM_TOPOLOGIES_CAL_TYPE,
 	ADM_RTAC_AUDVOL_CAL_TYPE,
 
+	/* ASUS_BSP +++ Add warning uevent for input occupied issue ( TT1290090 ) */
+	AUDIO_SET_ACTIVEINPUT_PID_TYPE,
+	/* ASUS_BSP --- */
+
+	/* ASUS_BSP +++ Add uevent for earpiece checking */
+	AUDIO_SET_ACTIVEOUTPUT_PID_TYPE,
+	/* ASUS_BSP --- */
+
 	ULP_LSM_TOPOLOGY_ID_CAL_TYPE,
 	AFE_FB_SPKR_PROT_TH_VI_CAL_TYPE,
 	AFE_FB_SPKR_PROT_EX_VI_CAL_TYPE,
@@ -104,6 +160,20 @@ enum {
 	ADM_LSM_TOPOLOGY_CAL_TYPE,
 	ADM_LSM_AUDPROC_CAL_TYPE,
 	ADM_LSM_AUDPROC_PERSISTENT_CAL_TYPE,
+//Jessy +++ AudioWizard hifi & ringtone mode
+	AUDIOWIZARD_FORCE_PRESET_TYPE,
+//Jessy ---
+//Jessy +++ send mic intent
+        AUDIORECORD_MIC_USING_TYPE,
+//Jessy ---
+//Jessy +++ AudioWizard muti-channel mode
+	AUDIOWIZARD_FORCE_CHANNEL_TYPE,
+//Jessy ---
+/* ASUS_BSP +++ Audio mode and device */
+	SET_MODE_TYPE,
+	SET_RCV_DEVICE_TYPE,
+/* ASUS_BSP --- Audio mode and device */
+	ADM_AUDPROC_PERSISTENT_CAL_TYPE,
 	MAX_CAL_TYPES,
 };
 

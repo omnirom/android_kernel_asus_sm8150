@@ -2854,6 +2854,11 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 		 __func__, port_id, path, rate, channel_mode, perf_mode,
 		 topology);
 
+	if (path == ADM_PATH_LIVE_REC) {
+		rate = 48000;
+		printk("%s: path:%d capturing, so force to resample rate:%d\n", __func__, path, rate);
+	}
+
 	port_id = q6audio_convert_virtual_to_portid(port_id);
 	port_idx = adm_validate_and_get_port_index(port_id);
 	if (port_idx < 0) {
