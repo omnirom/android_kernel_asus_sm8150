@@ -909,6 +909,7 @@ exit:
 		}
 	}
 	/* #ASUS_BSP --- */
+
 	/*
 	 * If plug type is corrected from special headset to headphone,
 	 * clear the micbias enable flag, set micbias back to 1.8V and

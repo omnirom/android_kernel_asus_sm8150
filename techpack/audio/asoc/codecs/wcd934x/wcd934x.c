@@ -51,6 +51,11 @@
 #include "../wcdcal-hwdep.h"
 #include "wcd934x-dsd.h"
 
+#include <linux/proc_fs.h>
+#include <soc/internal.h>
+//#define GPIO_AUDIO_DEBUG 122
+struct tavil_priv *g_tavil_priv;
+
 #define WCD934X_RATES_MASK (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |\
 			    SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_48000 |\
 			    SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_192000 |\
@@ -816,7 +821,7 @@ static void tavil_vote_svs(struct tavil_priv *tavil, bool vote)
 					   0x01, 0x00);
 	}
 done:
-	dev_dbg(tavil->dev, "%s: vote = %s, updated ref cnt = %u\n", __func__,
+	dev_err(tavil->dev, "%s: vote = %s, updated ref cnt = %u\n", __func__,
 		vote ? "vote" : "Unvote", tavil->svs_ref_cnt);
 	mutex_unlock(&tavil->svs_mutex);
 }
@@ -860,7 +865,7 @@ static int tavil_put_anc_func(struct snd_kcontrol *kcontrol,
 
 	mutex_lock(&tavil->codec_mutex);
 	tavil->anc_func = (!ucontrol->value.integer.value[0] ? false : true);
-	dev_dbg(codec->dev, "%s: anc_func %x", __func__, tavil->anc_func);
+	dev_err(codec->dev, "%s: anc_func %x", __func__, tavil->anc_func);
 
 	if (tavil->anc_func == true) {
 		snd_soc_dapm_enable_pin(dapm, "ANC EAR PA");
@@ -2073,7 +2078,7 @@ static int tavil_codec_enable_rx_bias(struct snd_soc_dapm_widget *w,
 	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
 	struct tavil_priv *tavil = snd_soc_codec_get_drvdata(codec);
 
-	dev_dbg(codec->dev, "%s %s %d\n", __func__, w->name, event);
+	dev_err(codec->dev, "%s %s %d\n", __func__, w->name, event);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -2235,7 +2240,7 @@ static int tavil_codec_enable_hphr_pa(struct snd_soc_dapm_widget *w,
 	struct tavil_dsd_config *dsd_conf = tavil->dsd_config;
 	int ret = 0;
 
-	dev_dbg(codec->dev, "%s %s %d\n", __func__, w->name, event);
+	dev_err(codec->dev, "%s %s %d\n", __func__, w->name, event);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -2396,7 +2401,7 @@ static int tavil_codec_enable_hphl_pa(struct snd_soc_dapm_widget *w,
 	struct tavil_dsd_config *dsd_conf = tavil->dsd_config;
 	int ret = 0;
 
-	dev_dbg(codec->dev, "%s %s %d\n", __func__, w->name, event);
+	dev_err(codec->dev, "%s %s %d\n", __func__, w->name, event);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -2556,7 +2561,7 @@ static int tavil_codec_enable_lineout_pa(struct snd_soc_dapm_widget *w,
 	struct tavil_priv *tavil = snd_soc_codec_get_drvdata(codec);
 	struct tavil_dsd_config *dsd_conf = tavil->dsd_config;
 
-	dev_dbg(codec->dev, "%s %s %d\n", __func__, w->name, event);
+	dev_err(codec->dev, "%s %s %d\n", __func__, w->name, event);
 
 	if (w->reg == WCD934X_ANA_LO_1_2) {
 		if (w->shift == 7) {
@@ -5877,6 +5882,29 @@ static int tavil_amic_pwr_lvl_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int tavil_uart_control_get(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+	struct wcd9xxx_pdata *pdata = dev_get_platdata(codec->dev->parent);
+
+	if (pdata->uart_control > 0)
+		ucontrol->value.integer.value[0] = gpio_get_value(pdata->uart_control);
+	return 0;
+}
+
+static int tavil_uart_control_put(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+	struct wcd9xxx_pdata *pdata = dev_get_platdata(codec->dev->parent);
+	int value = ucontrol->value.integer.value[0];
+
+	if (pdata->uart_control > 0)
+		gpio_set_value(pdata->uart_control, value);
+	return 0;
+}
+
 static const char *const tavil_conn_mad_text[] = {
 	"NOTUSED1", "ADC1", "ADC2", "ADC3", "ADC4", "NOTUSED5",
 	"NOTUSED6", "NOTUSED2", "DMIC0", "DMIC1", "DMIC2", "DMIC3",
@@ -6550,6 +6578,10 @@ static const struct snd_kcontrol_new tavil_snd_controls[] = {
 
 	SOC_ENUM_EXT("DMIC Drive Ctl", dmic_drv_ctl_enum,
 		tavil_dmic_drv_get, tavil_dmic_drv_put),
+
+	SOC_SINGLE_EXT("UART_Control", SND_SOC_NOPM, 23, 1, 0,
+		tavil_uart_control_get, tavil_uart_control_put),
+
 };
 
 static int tavil_dec_enum_put(struct snd_kcontrol *kcontrol,
@@ -8673,7 +8705,7 @@ static int tavil_hw_params(struct snd_pcm_substream *substream,
 	struct tavil_priv *tavil = snd_soc_codec_get_drvdata(dai->codec);
 	int ret = 0;
 
-	dev_dbg(tavil->dev, "%s: dai_name = %s DAI-ID %x rate %d num_ch %d\n",
+	dev_err(tavil->dev, "%s: dai_name = %s DAI-ID %x rate %d num_ch %d\n",
 		 __func__, dai->name, dai->id, params_rate(params),
 		 params_channels(params));
 
@@ -9166,7 +9198,7 @@ static int __tavil_cdc_mclk_enable_locked(struct tavil_priv *tavil,
 		return -EINVAL;
 	}
 
-	dev_dbg(tavil->dev, "%s: mclk_enable = %u\n", __func__, enable);
+	dev_err(tavil->dev, "%s: mclk_enable = %u\n", __func__, enable);
 
 	if (enable) {
 		tavil_dig_core_power_collapse(tavil, POWER_RESUME);
@@ -9389,7 +9421,7 @@ int tavil_cdc_mclk_tx_enable(struct snd_soc_codec *codec, bool enable)
 	clk_mode = test_bit(CLK_MODE, &tavil_p->status_mask);
 	clk_internal = test_bit(CLK_INTERNAL, &tavil_p->status_mask);
 
-	dev_dbg(codec->dev, "%s: clkmode: %d, enable: %d, clk_internal: %d\n",
+	dev_err(codec->dev, "%s: clkmode: %d, enable: %d, clk_internal: %d\n",
 		__func__, clk_mode, enable, clk_internal);
 
 	if (clk_mode || clk_internal) {
@@ -10249,6 +10281,71 @@ done:
 	return ret;
 }
 
+#define AUDIO_DEBUG_PROC_FILE "driver/audio_debug"
+
+static struct proc_dir_entry *audio_debug_proc_file;
+static ssize_t audio_debug_proc_read(struct file *filp, char __user *buff, size_t len, loff_t *off)
+{
+        char messages[256];
+
+        if (*off)
+                return 0;
+
+        memset(messages, 0, sizeof(messages));
+        if (len > 256)
+                len = 256;
+
+        //if (g_DebugMode)
+        //        sprintf(messages, "audio debug mode\n");
+        //else {
+                switch (g_tavil_priv->mbhc->wcd_mbhc.current_plug) {
+                case MBHC_PLUG_TYPE_HEADSET:
+                        sprintf(messages, "1\n");
+                        break;
+                case MBHC_PLUG_TYPE_HEADPHONE:
+                        sprintf(messages, "2\n");
+                        break;
+                case MBHC_PLUG_TYPE_HIGH_HPH:
+                        sprintf(messages, "3\n");
+                        break;
+                case MBHC_PLUG_TYPE_GND_MIC_SWAP:
+                        sprintf(messages, "4\n");
+                        break;
+                case MBHC_PLUG_TYPE_ANC_HEADPHONE:
+                        sprintf(messages, "5\n");
+                        break;
+                default:
+                        sprintf(messages, "0\n");
+                        break;
+                }
+        //}
+
+        if (copy_to_user(buff, messages, len))
+                return -EFAULT;
+
+        (*off)++;
+        return len;
+}
+
+static struct file_operations audio_debug_proc_ops = {
+        .read = audio_debug_proc_read,
+};
+
+static void create_audio_debug_proc_file(void)
+{
+        printk("[Audio][Debug] create_audio_debug_proc_file\n");
+        audio_debug_proc_file = proc_create(AUDIO_DEBUG_PROC_FILE, 0666, NULL, &audio_debug_proc_ops);
+
+        if (audio_debug_proc_file == NULL)
+                pr_err("[Audio][Debug] create_audio_debug_proc_file failed\n");
+}
+
+static void remove_audio_debug_proc_file(void)
+{
+        printk("[Audio][Debug] remove_audio_debug_proc_file\n");
+        remove_proc_entry(AUDIO_DEBUG_PROC_FILE, NULL);
+}
+
 static int tavil_soc_codec_probe(struct snd_soc_codec *codec)
 {
 	struct wcd9xxx *control;
@@ -10417,6 +10514,9 @@ static int tavil_soc_codec_probe(struct snd_soc_codec *codec)
 	 */
 	tavil_vote_svs(tavil, false);
 
+	g_tavil_priv = tavil;
+	create_audio_debug_proc_file();
+
 	return ret;
 
 err_pdata:
@@ -10451,6 +10551,7 @@ static int tavil_soc_codec_remove(struct snd_soc_codec *codec)
 	tavil_mbhc_deinit(codec);
 	tavil->mbhc = NULL;
 
+	remove_audio_debug_proc_file();
 	return 0;
 }
 
