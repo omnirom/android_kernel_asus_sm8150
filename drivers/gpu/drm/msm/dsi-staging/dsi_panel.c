@@ -738,23 +738,6 @@ error:
 	return rc;
 }
 
-//
-// dimming WLED brightness change
-//
-static void asus_lcd_led_trigger_dim(struct dsi_backlight_config *bl, int from, int to)
-{
-	int temp;
-	int wled_level = 0;
-
-	for (temp = 0; temp <= g_wled_dimming_div; temp++) {
-		wled_level = (bl->raw_bd->props.max_brightness * (from * 10 + (to - from) * temp)) /\
-				(g_bl_threshold * g_wled_dimming_div);
-		backlight_device_set_brightness(bl->raw_bd, wled_level);
-		msleep(10);
-		pr_debug("[Display] wled set to %d/%d\n", wled_level, bl->raw_bd->props.max_brightness);
-	}
-}
-
 void dsi_panel_set_backlight_asus_logic(struct dsi_panel *panel, u32 bl_level)
 {
 	struct dsi_backlight_config *bl = &panel->bl_config;
@@ -774,10 +757,6 @@ void dsi_panel_set_backlight_asus_logic(struct dsi_panel *panel, u32 bl_level)
 			if (g_bl_full_dcs) { // last backlight is full DCS control, set it to threshold
 				dsi_panel_update_backlight(panel, g_bl_threshold);
 			}
-			asus_lcd_led_trigger_dim(bl,
-				(g_last_bl >= g_bl_threshold) ? g_bl_threshold : g_last_bl, bl_level);
-		} else if (g_last_bl < bl_level) {
-			asus_lcd_led_trigger_dim(bl, g_last_bl, bl_level);
 		} else {
 			printk("[Display] Bypass backlight request with same level\n");
 		}
@@ -789,8 +768,6 @@ void dsi_panel_set_backlight_asus_logic(struct dsi_panel *panel, u32 bl_level)
 			dsi_panel_update_backlight(panel, bl_level);
 		} else {
 			dsi_panel_update_backlight(panel, bl_level);
-			if (!g_bl_full_dcs) // last time is semi-WLED control
-				asus_lcd_led_trigger_dim(bl, g_last_bl, g_bl_threshold);
 		}
 		g_bl_full_dcs = true;
 	}
