@@ -682,7 +682,7 @@ static int dsi_panel_update_backlight(struct dsi_panel *panel,
 		lastBL = (int)bl_lvl;
 	/* ASUS BSP Display +++ */
 
-	printk("[Display] backlight request: value = %d\n", bl_lvl);
+	//pr_err("update dcs backlight:%d\n", bl_lvl);
 
 	return rc;
 }
@@ -736,6 +736,47 @@ static int dsi_panel_update_pwm_backlight(struct dsi_panel *panel,
 
 error:
 	return rc;
+}
+
+void dsi_panel_set_backlight_asus_logic(struct dsi_panel *panel, u32 bl_level)
+{
+	struct dsi_backlight_config *bl = &panel->bl_config;
+
+	printk("[Display] backlight request: value = %d\n", bl_level);
+
+	if (bl_level == 0) {
+		backlight_device_set_brightness(bl->raw_bd, WLED_MIN_LEVEL_DISABLE);
+		printk("[Display] g_bl_full_dcs ctrl disable\n");
+		g_bl_full_dcs = false;
+	} else if (bl_level < g_bl_threshold) { /*wled control*/
+		if (g_last_bl == 0) {
+			printk("[Display] system resume set BL wled directly\n");
+			backlight_device_set_brightness(bl->raw_bd, 4095 * bl_level / g_bl_threshold);
+			dsi_panel_update_backlight(panel, g_bl_threshold);
+		} else if (bl_level < g_last_bl) {
+			if (g_bl_full_dcs) { // last backlight is full DCS control, set it to threshold
+				dsi_panel_update_backlight(panel, g_bl_threshold);
+			}
+		} else {
+			printk("[Display] Bypass backlight request with same level\n");
+		}
+		g_bl_full_dcs = false;
+	} else { /*dcs control*/
+		if (g_last_bl == 0) {
+			backlight_device_set_brightness(bl->raw_bd, WLED_MAX_LEVEL_ENABLE);
+			printk("[Display] g_bl_full_dcs ctrl enable\n");
+			dsi_panel_update_backlight(panel, bl_level);
+		} else {
+			dsi_panel_update_backlight(panel, bl_level);
+		}
+		g_bl_full_dcs = true;
+	}
+
+	if (bl_level <= g_bl_threshold) {
+		asus_lcd_cabc_off_locking();
+	} else {
+		asus_lcd_cabc_restore();
+	}
 }
 
 void asus_lcd_trigger_early_backlight_wq(u32 level)
@@ -799,7 +840,7 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 	case DSI_BACKLIGHT_WLED:
 		backlight_device_set_brightness(bl->raw_bd, bl_lvl);
 	case DSI_BACKLIGHT_DCS:
-		rc = dsi_panel_update_backlight(panel, bl_lvl);
+		dsi_panel_set_backlight_asus_logic(panel, bl_lvl);
 		break;
 	case DSI_BACKLIGHT_EXTERNAL:
 		break;
