@@ -725,10 +725,6 @@ ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC) $(KBUILD_CFLA
 	KBUILD_AFLAGS += -DCC_HAVE_ASM_GOTO
 endif
 
-ASUS_BUILD_NUMBER := $(shell cat $(srctree)/../../../out/soong/build_number.txt)
-$(warning ASUS_BUILD_NUMBER: $(ASUS_BUILD_NUMBER))
-KBUILD_CPPFLAGS += -DASUS_SW_VER=\"$(TARGET_SKU)-$(ASUS_BUILD_NUMBER)\"
-
 include scripts/Makefile.kcov
 include scripts/Makefile.gcc-plugins
 

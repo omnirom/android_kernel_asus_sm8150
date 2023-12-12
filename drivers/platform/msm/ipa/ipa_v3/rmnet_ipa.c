@@ -1470,11 +1470,11 @@ static void apps_ipa_packet_receive_notify(void *priv,
 			if (ip_version == 0x04) {
 				ip4h = (struct iphdr *) map_payload;
 				pr_err_ratelimited("[WakeUpInfo-IPA] IP4 src: %pI4", &ip4h->saddr);
-				ASUSEvtlog("[WakeUpInfo-IPA] IP4 src: %pI4", &ip4h->saddr);
+				//ASUSEvtlog("[WakeUpInfo-IPA] IP4 src: %pI4", &ip4h->saddr);
 			} else if (ip_version == 0x06) {
 				ip6h = (struct ipv6hdr *) map_payload;
 				pr_err_ratelimited("[WakeUpInfo-IPA] IP6 src: %pI6", &ip6h->saddr);
-				ASUSEvtlog("[WakeUpInfo-IPA] IP6 src: %pI6", &ip6h->saddr);
+				//ASUSEvtlog("[WakeUpInfo-IPA] IP6 src: %pI6", &ip6h->saddr);
 			}
 		}
 		/*AS-K Log Wake Up IP Address Info-*/

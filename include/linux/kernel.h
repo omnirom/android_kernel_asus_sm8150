@@ -15,7 +15,6 @@
 #include <linux/build_bug.h>
 #include <asm/byteorder.h>
 #include <uapi/linux/kernel.h>
-#include <linux/asusdebug.h>
 
 #define FORCE_RAMDUMP_FEATURE 1
 

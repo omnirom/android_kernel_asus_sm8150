@@ -32,20 +32,11 @@
 #include <linux/suspend.h>
 #include <trace/events/power.h>
 #include <linux/cpufreq.h>
-#include <linux/cpuidle.h>
 #include <linux/timer.h>
 #include <linux/wakeup_reason.h>
 
 #include "../base.h"
 #include "power.h"
-
-//ASUS_BSP +++
-/*[PM] pm_pwrcs_ret:
-	This flag mean dpm_suspend has been callback.
-	pm_pwrcs_ret will be cheked in function which is resume_console in printk.c
-*/
-unsigned int pm_pwrcs_ret=0;
-//ASUS_BSP ---
 
 typedef int (*pm_callback_t)(struct device *);
 
@@ -432,8 +423,6 @@ static void pm_dev_err(struct device *dev, pm_message_t state, const char *info,
 {
 	printk(KERN_ERR "PM: Device %s failed to %s%s: error %d\n",
 		dev_name(dev), pm_verb(state.event), info, error);
-	ASUSEvtlog("PM: Device %s failed to %s%s: error %d\n",
-		dev_name(dev), pm_verb(state.event), info, error);
 }
 
 static void dpm_show_time(ktime_t starttime, pm_message_t state, int error,
@@ -670,7 +659,6 @@ void dpm_noirq_end(void)
 {
 	resume_device_irqs();
 	device_wakeup_disarm_wake_irqs();
-	cpuidle_resume();
 }
 
 /**
@@ -1190,7 +1178,6 @@ static int device_suspend_noirq(struct device *dev)
 
 void dpm_noirq_begin(void)
 {
-	cpuidle_pause();
 	device_wakeup_arm_wake_irqs();
 	suspend_device_irqs();
 }
@@ -1665,7 +1652,6 @@ int dpm_suspend(pm_message_t state)
 		if (async_error)
 			break;
 	}
-	pm_pwrcs_ret = 1; //ASUS_BSP + [PM] This flag can check dpm_suspend state for resume_console in printk.c
 	mutex_unlock(&dpm_list_mtx);
 	async_synchronize_full();
 	if (!error)
